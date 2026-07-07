@@ -118,17 +118,9 @@
 	}
 
 	/* Main Content Area */
-	.main-content {
-		flex: 1; /* Forces main container to take up all empty space */
-		max-width: 1200px;
-		width: 100%;
-		margin: 0 auto;
-		padding: 2rem 1.5rem;
-		box-sizing: border-box;
-	}
 
 	main {
-		min-height: 100vh;
+		min-height: 75vh;
 	}
 
 	/* Footer Styling */
