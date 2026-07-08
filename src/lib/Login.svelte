@@ -1,46 +1,118 @@
 <script>
 	import { supabase } from '$lib/services/database';
-    import { goto } from '$dashboard/dashboard';
+	import { goto } from '$app/navigation';
+	import Dashboard from '$lib/dashboard/dashboard.svelte';
 
-    let email = $state('');
+	let email = $state('');
 	let password = $state('');
+	let username = $state('');
+	let isSignup = $state(false);
+	let showPassword = $state(false);
+
+	async function Signup() {
+		isSignup = true;
+	}
+
+	async function ShowPassword() {
+		showPassword = !showPassword;
+	}
 
 	async function createAccount() {
-        if(email === '' || password === ''){ 
-            alert("Empty input. Please input a character")
-        }
+		if (email === '' || password === '' || username === '') {
+			alert('Empty input. Please input a character');
+			return;
+		}
 
-		const {data, error} = await supabase.auth.signUp({
-            email: email,
-            password: password
-        })
+		const { data, error } = await supabase.auth.signUp({
+			email: email,
+			options: {
+				data: {
+					username: username
+				}
+			},
+			password: password
+		});
 
-        if(!error){
-            alert("Successful Login.")
-            goto('/dashboard');
-        }else{
-            console.log(error);
-            alert(error);
-        }
+		if (!error) {
+			alert('Successfully created an account.');
+			isSignup = false;
+		} else {
+			console.log(error);
+			alert(error);
+		}
+	}
+
+	async function login() {
+		const { data, error } = await supabase.auth.signInWithPassword({
+			email: email,
+			password: password
+		});
+
+		if (!error) {
+			alert('Success Login.');
+			goto('/dashboard');
+		} else {
+			console.log(error);
+			alert(error);
+		}
 	}
 </script>
 
 <main class="login-wrapper">
 	<div class="form-container">
-		<h3>Login Account</h3>
+		{#if isSignup}
+			<h3>Signup First</h3>
+		{:else}
+			<h3>Login Account</h3>
+		{/if}
+
 		<form action="" class="login-form">
 			<div class="login-field">
-				<label for="userName">User Name</label>
-				<input type="text" id="userName" bind:value={email} placeholder="Enter your username" />
+				<label for="email">Email</label>
+				<input type="text" id="email" bind:value={email} placeholder="Enter your email" />
 			</div>
+
+			{#if isSignup}
+				<div class="username-field">
+					<label for="userName">Username</label>
+					<input
+						type="text"
+						id="userName"
+						bind:value={username}
+						placeholder="Enter your username"
+					/>
+				</div>
+			{/if}
 
 			<div class="login-field">
 				<label for="pass">Password</label>
-				<input type="password" id="pass" bind:value={password} placeholder="••••••••" />
+				<div class="password-wrapper">
+					<input
+						type={showPassword ? 'text' : 'password'}
+						id="pass"
+						bind:value={password}
+						placeholder="••••••••"
+					/>
+					<button
+						class="eye-toggle"
+						type="button"
+						onclick={ShowPassword}
+						aria-label={showPassword ? 'Hide Password' : 'Show Password'}
+						>{showPassword ? '🙈' : '👁️'}</button
+					>
+				</div>
 			</div>
 
 			<div class="login-btn-container">
-				<button type="button" id="login-btn">Login</button>
+				{#if isSignup}
+					<button onclick={createAccount} type="button" id="login-btn">Create Account</button>
+				{:else}
+					<button onclick={login} type="button" id="login-btn">Login</button>
+				{/if}
+			</div>
+
+			<div class="signup-container">
+				<p>Don't have an account yet? <a onclick={Signup}>Sign up</a></p>
 			</div>
 		</form>
 	</div>
@@ -64,7 +136,8 @@
 		width: 100%;
 		max-width: 400px; /* Clean mobile-friendly width */
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        margin-top: 100px;
+		margin-top: 20px;
+		margin-bottom: 20px;
 	}
 
 	h3 {
@@ -87,6 +160,11 @@
 		gap: 0.5rem;
 	}
 
+	.username-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
 	label {
 		font-size: 0.85rem;
 		color: #a1a1aa; /* Slate Gray label */
@@ -117,6 +195,47 @@
 		margin-top: 0.75rem;
 	}
 
+	.signup-container {
+		display: flex;
+		justify-content: center;
+		gap: 1rem;
+		margin-bottom: 0.2rem;
+		color: #a1a1aa; /* Slate Gray */
+		text-decoration: none;
+		font-size: 0.85rem;
+	}
+
+	.signup-container a {
+		color: #dc2626;
+		text-decoration: none;
+		transition: color 0.2s ease;
+	}
+
+	.signup-container a:hover {
+		color: #f4f4f5; /* Transitions into primary white text */
+	}
+
+	.password-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.password-wrapper input {
+		width: 100%;
+		padding-right: 2.5rem; /* room for the icon */
+	}
+
+	.eye-toggle {
+		position: absolute;
+		right: 0.5rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 0.8rem;
+		width: auto;
+	}
+
 	button {
 		width: 100%;
 		background-color: #dc2626; /* Crimson Red */
@@ -129,7 +248,6 @@
 		cursor: pointer;
 		transition: background-color 0.2s;
 	}
-
 	button:hover {
 		background-color: #b91c1c; /* Deep Ruby Red on hover */
 	}

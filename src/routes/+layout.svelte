@@ -120,7 +120,7 @@
 	/* Main Content Area */
 
 	main {
-		min-height: 75vh;
+		min-height: 80vh;
 	}
 
 	/* Footer Styling */
