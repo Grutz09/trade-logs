@@ -18,7 +18,7 @@
 			<div class="list-wrapper">
 				<ul>
 					<li><a href="/">Dashboard</a></li>
-					<li><a href="/">History</a></li>
+					<li><a href="../history">History</a></li>
 					<li><a href="/">Statistics</a></li>
 					<li><a href="/">Settings</a></li>
 				</ul>

@@ -1,7 +1,6 @@
 <script>
 	import { supabase } from '$lib/services/database';
 	import { goto } from '$app/navigation';
-	import Dashboard from '$lib/dashboard/dashboard.svelte';
 
 	let email = $state('');
 	let password = $state('');
