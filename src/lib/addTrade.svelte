@@ -1,5 +1,54 @@
 <script>
-	// Write your Svelte JavaScript logic, bindings, and submit handlers here!
+	import{ supabase } from '$lib/services/database';
+
+	let tradeDate = $state('');
+	let pair = $state('');
+	let position = $state('');
+	let entryPrice = $state('');
+	let exitPrice = $state('');
+	let sl = $state('');
+	let tp = $state('');
+	let leverage = $state('');
+	let riskAmount = $state('');
+	let result = $state('');
+	let grossProfit = $state('');
+	let grossLoss = $state('');
+	let netPnl = $state('');
+	let strategy = $state('');
+	let mrktCondition = $state('');
+	let chartUrl = $state('');
+	let emotionBfr = $state('');
+	let emotionAftr = $state('');
+	let mistakes = $state('');
+	let lessonLearned = $state('');
+
+	async function addTrade() {
+		const { data: { user } } = await supabase.auth.getUser();
+
+		const { error } = await supabase.from('trades').insert([{
+			user_id: user.id,
+			trade_date: tradeDate,
+			pair: pair,
+			position: position,
+			entry_price: entryPrice,
+			exit_price: exitPrice,
+			stop_loss: sl,
+			take_profit: tp,
+			leverage: leverage,
+			risk_amount: riskAmount,
+			result: result,
+			profit: grossProfit,
+			loss: grossLoss,
+			net_pnl: netPnl,
+			strategy: strategy,
+			market_condition: mrktCondition,
+			chart_image_url: chartUrl,
+			emotion_before: emotionBfr,
+			emotion_after: emotionAftr,
+			mistakes: mistakes,
+			lesson_learned: lessonLearned
+		}]);
+	}
 </script>
 
 <main class="form-page">
@@ -15,17 +64,17 @@
 				<div class="grid-3">
 					<div class="input-group">
 						<label for="trade_date">Trade Date</label>
-						<input id="trade_date" type="date" />
+						<input bind:value={tradeDate} id="trade_date" type="date" />
 					</div>
 
 					<div class="input-group">
 						<label for="pair">Ticker / Pair</label>
-						<input id="pair" />
+						<input bind:value={pair} id="pair" />
 					</div>
 
 					<div class="input-group">
 						<label for="position">Position Side</label>
-						<select id="position">
+						<select bind:value={position} id="position">
 							<option>LONG (Buy)</option>
 							<option>SHORT (Sell)</option>
 						</select>
@@ -38,34 +87,34 @@
 				<div class="grid-4">
 					<div class="input-group">
 						<label for="entry_price">Entry Price</label>
-						<input id="entry_price" />
+						<input bind:value={entryPrice} id="entry_price" />
 					</div>
 
 					<div class="input-group">
 						<label for="exit_price">Exit Price</label>
-						<input id="exit_price" />
+						<input bind:value={exitPrice} id="exit_price" />
 					</div>
 
 					<div class="input-group">
 						<label for="stop_loss">Stop Loss (SL)</label>
-						<input id="stop_loss" />
+						<input bind:value={sl} id="stop_loss" />
 					</div>
 
 					<div class="input-group">
 						<label for="take_profit">Take Profit (TP)</label>
-						<input id="take_profit" />
+						<input bind:value={tp} id="take_profit" />
 					</div>
 				</div>
 
 				<div class="grid-3 mt-4">
 					<div class="input-group">
 						<label for="leverage">Leverage / Lot Size</label>
-						<input id="leverage" />
+						<input bind:value={leverage} id="leverage" />
 					</div>
 
 					<div class="input-group">
 						<label for="risk_amount">Risk Amount ($)</label>
-						<input id="risk_amount" />
+						<input bind:value={riskAmount} id="risk_amount" />
 					</div>
 				</div>
 			</fieldset>
@@ -75,7 +124,7 @@
 				<div class="grid-4">
 					<div class="input-group">
 						<label for="result">Result</label>
-						<select id="result">
+						<select bind:value={result} id="result">
 							<option>WIN</option>
 							<option>LOSS</option>
 							<option>Breakeven</option>
@@ -84,17 +133,17 @@
 
 					<div class="input-group">
 						<label for="profit">Gross Profit</label>
-						<input id="profit" />
+						<input bind:value={grossProfit} id="profit" />
 					</div>
 
 					<div class="input-group">
 						<label for="loss">Gross Loss</label>
-						<input id="loss" />
+						<input bind:value={grossLoss} id="loss" />
 					</div>
 
 					<div class="input-group">
 						<label for="net_pnl">Net PnL ($)</label>
-						<input id="net_pnl" />
+						<input bind:value={grossLoss} id="net_pnl" />
 					</div>
 				</div>
 			</fieldset>
@@ -104,12 +153,12 @@
 				<div class="grid-3">
 					<div class="input-group">
 						<label for="strategy">Strategy / Playbook Setup</label>
-						<input id="strategy" />
+						<input bind:value={strategy} id="strategy" />
 					</div>
 
 					<div class="input-group">
 						<label for="market_condition">Market Condition</label>
-						<select id="market_condition">
+						<select bind:value={mrktCondition} id="market_condition">
 							<option>Trending Up / Down</option>
 							<option>Ranging / Sideways</option>
 							<option>High Volatility Chopping</option>
@@ -118,8 +167,8 @@
 
 					<div class="input-group">
 						<label for="chart_image_url">Chart Setup URL</label>
-						<input id="chart_image_url" />
-					</div>
+						<input bind:value={chartUrl} id="chart_image_url" />
+					</div> 
 				</div>
 			</fieldset>
 
@@ -128,7 +177,7 @@
 				<div class="grid-2">
 					<div class="input-group">
 						<label for="emotion_before">Emotion Before Trade</label>
-						<select id="emotion_before">
+						<select bind:value={emotionBfr} id="emotion_before">
 							<option>Confident / Disciplined</option>
 							<option>Calm / Neutral</option>
 							<option>FOMO / Impatient</option>
@@ -138,7 +187,7 @@
 
 					<div class="input-group">
 						<label for="emotion_after">Emotion After Trade</label>
-						<select id="emotion_after">
+						<select bind:value={emotionAftr} id="emotion_after">
 							<option>Satisfied / Followed Rules</option>
 							<option>Neutral</option>
 							<option>Angry / Revengeful</option>
@@ -150,12 +199,12 @@
 				<div class="grid-2 mt-4">
 					<div class="input-group">
 						<label for="mistake_notes">Mistakes / Review Notes</label>
-						<textarea id="mistake_notes"></textarea>
+						<textarea bind:value={mistakes} id="mistake_notes"></textarea>
 					</div>
 
 					<div class="input-group">
 						<label for="lesson_learned">Key Lesson Learned</label>
-						<textarea id="lesson_learned"></textarea>
+						<textarea bind:value={lessonLearned} id="lesson_learned"></textarea>
 					</div>
 				</div>
 			</fieldset>

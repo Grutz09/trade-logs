@@ -48,7 +48,6 @@
 		});
 
 		if (!error) {
-			alert('Success Login.');
 			goto('/dashboard');
 		} else {
 			console.log(error);

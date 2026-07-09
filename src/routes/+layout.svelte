@@ -1,44 +1,61 @@
 <script>
 	import favicon from '$lib/assets/favicon.svg';
+	import { supabase } from '$lib/services/database';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 
 	let { children } = $props();
+
+	// Hide the nav and footer on the login page
+	let isLoginPage = $derived(page.url.pathname === '/login');
+
+	async function logout() {
+		await supabase.auth.signOut();
+		goto('/login');
+	}
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="app-layout">
-	<nav class="main-nav">
-		<div class="nav-container">
-			<div class="text-logo">
-				<h2>Pip <span>Diary</span></h2>
-			</div>
+{#if !isLoginPage}
+	<div class="app-layout">
+		<nav class="main-nav">
+			<div class="nav-container">
+				<div class="text-logo">
+					<h2>Pip <span>Diary</span></h2>
+				</div>
 
-			<div class="list-wrapper">
-				<ul>
-					<li><a href="/">Dashboard</a></li>
-					<li><a href="../history">History</a></li>
-					<li><a href="/">Statistics</a></li>
-					<li><a href="/">Settings</a></li>
-				</ul>
+				<div class="list-wrapper">
+					<ul>
+						<li><a href="/dashboard">Dashboard</a></li>
+						<li><a href="/history">History</a></li>
+						<li><a href="/statistics">Statistics</a></li>
+						<li><a href="/settings">Settings</a></li>
+					</ul>
+				</div>
+
+				<button class="logout-btn" onclick={logout}>Logout</button>
 			</div>
-		</div>
-	</nav>
-</div>
+		</nav>
+	</div>
+{/if}
 
 <main>
 	{@render children()}
 </main>
 
-<footer class="main-footer">
-	<div class="footer-links">
-		<a href="/privacy">Privacy Policy</a>
-		<a href="/terms">Terms of Service</a>
-		<a href="/contact">Contact</a>
-	</div>
-	<p>© 2026 Pip <span>Diary</span>. All rights reserved.</p>
-</footer>
+{#if !isLoginPage}
+	<footer class="main-footer">
+		<div class="footer-links">
+			<a href="/privacy">Privacy Policy</a>
+			<a href="/terms">Terms of Service</a>
+			<a href="/contact">Contact</a>
+		</div>
+		<p>© 2026 Pip <span>Diary</span>. All rights reserved.</p>
+	</footer>
+{/if}
 
 <style>
 	/* Global layout configuration to push footer to the bottom */
@@ -117,6 +134,27 @@
 		text-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
 	}
 
+
+	.logout-btn {
+		background-color: transparent;
+		color: #a1a1aa;
+		border: 1px solid #27272a;
+		padding: 0.4rem 1rem;
+		font-size: 0.85rem;
+		font-weight: 500;
+		border-radius: 6px;
+		cursor: pointer;
+		transition:
+			color 0.2s ease,
+			border-color 0.2s ease,
+			background-color 0.2s ease;
+		width: auto;
+	}
+	.logout-btn:hover {
+		color: #dc2626;
+		border-color: #dc2626;
+		background-color: rgba(220, 38, 38, 0.08);
+	}
 	/* Main Content Area */
 
 	main {
