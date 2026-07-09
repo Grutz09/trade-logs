@@ -1,5 +1,6 @@
 <script>
-	import { supabase } from '$lib/services/database';
+	import { getContext } from 'svelte';
+	const supabase = getContext('supabase');
 	import { goto } from '$app/navigation';
 
 	let email = $state('');
@@ -110,7 +111,11 @@
 			</div>
 
 			<div class="signup-container">
-				<p>Don't have an account yet? <a onclick={Signup}>Sign up</a></p>
+				<p>
+					Don't have an account yet? <button type="button" class="signup-link" onclick={Signup}
+						>Sign up</button
+					>
+				</p>
 			</div>
 		</form>
 	</div>
@@ -203,16 +208,23 @@
 		font-size: 0.85rem;
 	}
 
-	.signup-container a {
+	.signup-link {
+		background: none;
+		border: none;
 		color: #dc2626;
 		text-decoration: none;
+		font-size: inherit;
+		font-family: inherit;
+		cursor: pointer;
+		padding: 0;
+		width: auto;
 		transition: color 0.2s ease;
 	}
 
-	.signup-container a:hover {
-		color: #f4f4f5; /* Transitions into primary white text */
+	.signup-link:hover {
+		color: #f4f4f5;
+		background: none;
 	}
-
 	.password-wrapper {
 		position: relative;
 		display: flex;

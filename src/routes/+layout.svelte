@@ -1,13 +1,52 @@
 <script>
 	import favicon from '$lib/assets/favicon.svg';
-	import { supabase } from '$lib/services/database';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/state';
+	import { createBrowserClient, isBrowser } from '@supabase/ssr';
+	import { goto, invalidate } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onMount, setContext } from 'svelte';
+	import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
-	// Hide the nav and footer on the login page
-	let isLoginPage = $derived(page.url.pathname === '/login');
+	// Create the browser-side Supabase client
+	const supabase = createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+		global: {
+			fetch
+		},
+		cookies: {
+			getAll() {
+				if (!isBrowser()) return [];
+				return document.cookie
+					.split('; ')
+					.filter(Boolean)
+					.map((cookie) => {
+						const [name, ...rest] = cookie.split('=');
+						return { name, value: rest.join('=') };
+					});
+			},
+			setAll(cookiesToSet) {
+				if (!isBrowser()) return;
+				cookiesToSet.forEach(({ name, value, options }) => {
+					document.cookie = `${name}=${value}; path=${options?.path ?? '/'}`;
+				});
+			}
+		}
+	});
+
+	// Share with all child components
+	setContext('supabase', supabase);
+
+	let isLoginPage = $derived($page.url.pathname === '/login');
+
+	onMount(() => {
+		// Listen for auth state changes and refresh server data
+		const {
+			data: { subscription }
+		} = supabase.auth.onAuthStateChange((event, session) => {
+			invalidate('supabase:auth');
+		});
+		return () => subscription.unsubscribe();
+	});
 
 	async function logout() {
 		await supabase.auth.signOut();
@@ -133,7 +172,6 @@
 		color: #dc2626; /* Glow Crimson on hover */
 		text-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
 	}
-
 
 	.logout-btn {
 		background-color: transparent;

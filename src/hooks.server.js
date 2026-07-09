@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 import { redirect } from '@sveltejs/kit';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
@@ -6,31 +6,56 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 const PROTECTED_ROUTES = ['/dashboard', '/history', '/statistics', '/settings'];
 
 export async function handle({ event, resolve }) {
-	// Create a server-side supabase client that reads the auth cookie
-	const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-		global: {
-			headers: {
-				cookie: event.request.headers.get('cookie') ?? ''
+	// Create a server-side Supabase client that properly reads/writes cookies
+	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+		cookies: {
+			getAll() {
+				return event.cookies.getAll();
+			},
+			setAll(cookiesToSet) {
+				cookiesToSet.forEach(({ name, value, options }) =>
+					event.cookies.set(name, value, { ...options, path: '/' })
+				);
 			}
 		}
 	});
 
-	// Get the current session from the cookie
-	const {
-		data: { session }
-	} = await supabase.auth.getSession();
+	// Safely validate the session server-side
+	event.locals.safeGetSession = async () => {
+		const {
+			data: { session }
+		} = await event.locals.supabase.auth.getSession();
+
+		if (!session) return { session: null, user: null };
+
+		// Verify the token is actually valid (not expired or tampered)
+		const {
+			data: { user },
+			error
+		} = await event.locals.supabase.auth.getUser();
+
+		if (error) return { session: null, user: null };
+
+		return { session, user };
+	};
+
+	const { session } = await event.locals.safeGetSession();
 
 	const isProtected = PROTECTED_ROUTES.some((route) => event.url.pathname.startsWith(route));
 
-	// If the route is protected and there is no active session, redirect to login
+	// Not logged in → redirect to login
 	if (isProtected && !session) {
 		throw redirect(303, '/login');
 	}
 
-	// If the user is already logged in and tries to visit the login page, redirect to dashboard
+	// Already logged in → skip login page
 	if (session && event.url.pathname === '/login') {
 		throw redirect(303, '/dashboard');
 	}
 
-	return resolve(event);
+	return resolve(event, {
+		filterSerializedResponseHeaders(name) {
+			return name === 'content-range' || name === 'x-supabase-api-version';
+		}
+	});
 }

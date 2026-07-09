@@ -1,5 +1,6 @@
 <script>
-	import{ supabase } from '$lib/services/database';
+	import { getContext } from 'svelte';
+	const supabase = getContext('supabase');
 
 	let tradeDate = $state('');
 	let pair = $state('');
@@ -22,32 +23,68 @@
 	let mistakes = $state('');
 	let lessonLearned = $state('');
 
-	async function addTrade() {
-		const { data: { user } } = await supabase.auth.getUser();
+	function validateInputs() {
+		const requiredFields = [
+			{ name: 'Trade Date', value: tradeDate },
+			{ name: 'Pair', value: pair },
+			{ name: 'Position', value: position },
+			{ name: 'Entry Price', value: entryPrice },
+			{ name: 'Stop Loss', value: sl },
+			{ name: 'Take Profit', value: tp },
+			{ name: 'Leverage', value: leverage },
+			{ name: 'Risk Amount', value: riskAmount },
+			{ name: 'Result', value: result },
+			{ name: 'Strategy', value: strategy },
+			{ name: 'Market Condition', value: mrktCondition },
+			{ name: 'Emotion Before', value: emotionBfr },
+			{ name: 'Emotion After', value: emotionAftr },
+			{ name: 'Mistakes', value: mistakes },
+			{ name: 'Lesson Learned', value: lessonLearned }
+		];
 
-		const { error } = await supabase.from('trades').insert([{
-			user_id: user.id,
-			trade_date: tradeDate,
-			pair: pair,
-			position: position,
-			entry_price: entryPrice,
-			exit_price: exitPrice,
-			stop_loss: sl,
-			take_profit: tp,
-			leverage: leverage,
-			risk_amount: riskAmount,
-			result: result,
-			profit: grossProfit,
-			loss: grossLoss,
-			net_pnl: netPnl,
-			strategy: strategy,
-			market_condition: mrktCondition,
-			chart_image_url: chartUrl,
-			emotion_before: emotionBfr,
-			emotion_after: emotionAftr,
-			mistakes: mistakes,
-			lesson_learned: lessonLearned
-		}]);
+		const missingField = requiredFields.find((field) => field.value === '' || field.value == null);
+
+		if (missingField) {
+			throw new Error(`${missingField.name} is required.`);
+		}
+	}
+
+	async function addTrade() {
+		try {
+			validateInputs();
+
+			const {
+				data: { user }
+			} = await supabase.auth.getUser();
+
+			const { error } = await supabase.from('trades').insert([
+				{
+					user_id: user.id,
+					trade_date: tradeDate,
+					pair: pair,
+					position: position,
+					entry_price: entryPrice,
+					exit_price: exitPrice,
+					stop_loss: sl,
+					take_profit: tp,
+					leverage: leverage,
+					risk_amount: riskAmount,
+					result: result,
+					profit: grossProfit,
+					loss: grossLoss,
+					net_pnl: netPnl,
+					strategy: strategy,
+					market_condition: mrktCondition,
+					chart_image_url: chartUrl,
+					emotion_before: emotionBfr,
+					emotion_after: emotionAftr,
+					mistake_notes: mistakes,
+					lesson_learned: lessonLearned
+				}
+			]);
+		} catch (error) {
+			alert(error.message);
+		}
 	}
 </script>
 
@@ -143,7 +180,7 @@
 
 					<div class="input-group">
 						<label for="net_pnl">Net PnL ($)</label>
-						<input bind:value={grossLoss} id="net_pnl" />
+						<input bind:value={netPnl} id="net_pnl" />
 					</div>
 				</div>
 			</fieldset>
@@ -168,7 +205,7 @@
 					<div class="input-group">
 						<label for="chart_image_url">Chart Setup URL</label>
 						<input bind:value={chartUrl} id="chart_image_url" />
-					</div> 
+					</div>
 				</div>
 			</fieldset>
 

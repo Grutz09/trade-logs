@@ -1,5 +1,5 @@
 // src/hooks.server.js
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 import { redirect } from '@sveltejs/kit';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
@@ -7,29 +7,48 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 const PROTECTED_ROUTES = ['/dashboard', '/history', '/statistics', '/settings'];
 
 export async function handle({ event, resolve }) {
-	const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-		global: {
-			headers: {
-				cookie: event.request.headers.get('cookie') ?? ''
-			}
-		}
-	});
+    //create server-side supabase client  that reads/writes cookies
+	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY,{
+        cookies: {
+            getAll(){
+                return event.cookies.getAll();
+            },
+            setAll(cookiesToSet){
+                cookiesToSet.forEach(({ name, value, options}) => 
+                event.cookies.set(name, value, {...options, path: '/'}))
+            }
+        }
+    })
+	
+    //safely get the session (validate the token server side)
+    event.locals.safeGetSession = async () => {
+        const { data: { session } } = await event.locals.supabase.auth.getSession();
+        if(!session) return {session: null, user: null};
 
-	const {
-		data: { session }
-	} = await supabase.auth.getSession();
+        //verify that token is valid  and not just present
+        const { data: { user }, error } = await event.locals.supabase.auth.getUser();
+        if(error) return {session: null, user: null};
 
-	const isProtected = PROTECTED_ROUTES.some((route) => event.url.pathname.startsWith(route));
+        return { session, user };
+    };
 
-	if (isProtected && !session) {
-		// Not logged in → send to login
-		throw redirect(303, '/login');
-	}
+    const { session } = await event.locals.safeGetSession();
 
-	if (session && event.url.pathname === '/login') {
-		// Already logged in → skip login page
-		throw redirect(303, '/dashboard');
-	}
+    const isProtected = PROTECTED_ROUTES.some( route => 
+        event.url.pathname.startsWith(route)
+    );
 
-	return resolve(event);
+    if(isProtected && !session){
+        throw redirect(303, '/login');
+    }
+
+    if(session && event.url.pathname === '/login'){
+        throw redirect(303, '/dashboard')
+    };
+
+    return  resolve(event, {
+        filterSerializedResponseHeaders(name){
+            return name === 'content-range' || name === 'x-supabase-api-version';
+        }
+    })
 }

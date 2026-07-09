@@ -4,8 +4,14 @@
 
 <main class="history-page">
 	<div class="header">
-		<h3>Trade History</h3>
-		<p>View your trades and transactions.</p>
+		<div class="hero-section">
+			<div class="header-elmtns">
+				<h3>Trade History</h3>
+				<p>View your trades and transactions.</p>
+			</div>
+
+			<button class="add-trade-btn" onclick={AddTrade}> + Add Trade </button>
+		</div>
 
 		<div class="trade-category">
 			<p>All Trades</p>
@@ -149,6 +155,26 @@
 		color: #a1a1aa; /* Slate Gray */
 		margin: 0 0 1.5rem 0;
 		font-size: 0.95rem;
+	}
+
+	.hero-section{
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+	}
+
+	.add-trade-btn {
+		width: 90px;
+		background-color: #dc2626; /* Crimson Red */
+		color: #f4f4f5;
+		border: none;
+		font-size: 0.75rem;
+		border-radius: 20px;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+	.add-trade-btn:hover {
+		background-color: #b91c1c; /* Deep Ruby Red on hover */
 	}
 
 	.trade-category {
