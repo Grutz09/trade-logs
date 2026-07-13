@@ -1,5 +1,26 @@
 <script>
-	import AddTrade from '$lib/addTrade.svelte';
+	import { getContext } from 'svelte';
+	const supabase = getContext('supabase');
+	
+	// array to store values
+	let tradeList = $state([]);
+
+	async function fetchTrades(){
+		const {data, error} = await supabase.from('trades')
+		.select("*");
+
+		tradeList = data;
+
+		if(!tradeList || tradeList.length === 0){
+			alert("No trades found.");
+			return;
+		}
+
+	}
+
+	$effect(() => {
+		fetchTrades();
+	})
 </script>
 
 <main class="history-page">
@@ -10,7 +31,7 @@
 				<p>View your trades and transactions.</p>
 			</div>
 
-			<button class="add-trade-btn" onclick={AddTrade}> + Add Trade </button>
+			<a href="/addTrade" class="add-trade-btn">+</a>
 		</div>
 
 		<div class="trade-category">
@@ -157,19 +178,26 @@
 		font-size: 0.95rem;
 	}
 
-	.hero-section{
+	.hero-section {
 		display: flex;
 		flex-direction: row;
 		justify-content: space-between;
 	}
 
 	.add-trade-btn {
-		width: 90px;
-		background-color: #dc2626; /* Crimson Red */
-		color: #f4f4f5;
+		width: 40px;
+		height: 40px;
+		color: #f8f8ff;
 		border: none;
-		font-size: 0.75rem;
-		border-radius: 20px;
+		text-decoration: none;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		font-size: 1.5rem;
+		line-height: 1;
+		padding: 0;
+		font-weight: bolder;
+		border-radius: 10px;
 		cursor: pointer;
 		transition: background-color 0.2s;
 	}

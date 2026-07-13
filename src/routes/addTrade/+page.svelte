@@ -23,6 +23,31 @@
 	let mistakes = $state('');
 	let lessonLearned = $state('');
 
+
+
+	function clearFields() {
+		tradeDate = '';
+		pair = '';
+		position = '';
+		entryPrice = '';
+		exitPrice = '';
+		sl = '';
+		tp = '';
+		leverage = '';
+		riskAmount = '';
+		result = '';
+		grossProfit = '';
+		grossLoss = '';
+		netPnl = '';
+		strategy = '';
+		mrktCondition = '';
+		chartUrl = '';
+		emotionBfr = '';
+		emotionAftr ='';
+		mistakes = '';
+		lessonLearned = '';
+	}
+
 	function validateInputs() {
 		const requiredFields = [
 			{ name: 'Trade Date', value: tradeDate },
@@ -42,8 +67,8 @@
 			{ name: 'Lesson Learned', value: lessonLearned }
 		];
 
-		const missingField = requiredFields.find((field) => field.value === '' || field.value == null);
-
+		const missingField = requiredFields.find((field) => field.value === '' || field.value === null);
+	
 		if (missingField) {
 			throw new Error(`${missingField.name} is required.`);
 		}
@@ -61,27 +86,34 @@
 				{
 					user_id: user.id,
 					trade_date: tradeDate,
-					pair: pair,
-					position: position,
+					pair: pair.toLocaleLowerCase(),
+					position: position.toLocaleLowerCase(),
 					entry_price: entryPrice,
 					exit_price: exitPrice,
 					stop_loss: sl,
 					take_profit: tp,
 					leverage: leverage,
 					risk_amount: riskAmount,
-					result: result,
+					result: result.toLocaleLowerCase(),
 					profit: grossProfit,
 					loss: grossLoss,
 					net_pnl: netPnl,
-					strategy: strategy,
-					market_condition: mrktCondition,
+					strategy: strategy.toLocaleLowerCase(),
+					market_condition: mrktCondition.toLocaleLowerCase(),
 					chart_image_url: chartUrl,
-					emotion_before: emotionBfr,
-					emotion_after: emotionAftr,
-					mistake_notes: mistakes,
-					lesson_learned: lessonLearned
+					emotion_before: emotionBfr.toLocaleLowerCase(),
+					emotion_after: emotionAftr.toLocaleLowerCase(),
+					mistake_notes: mistakes.toLocaleLowerCase(),
+					lesson_learned: lessonLearned.toLocaleLowerCase()
 				}
 			]);
+				
+			if(error){
+				throw new Error(error.message);
+			}
+
+			alert("Trade committed.");
+
 		} catch (error) {
 			alert(error.message);
 		}
@@ -112,8 +144,8 @@
 					<div class="input-group">
 						<label for="position">Position Side</label>
 						<select bind:value={position} id="position">
-							<option>LONG (Buy)</option>
-							<option>SHORT (Sell)</option>
+							<option>LONG</option>
+							<option>SHORT</option>
 						</select>
 					</div>
 				</div>
@@ -196,9 +228,10 @@
 					<div class="input-group">
 						<label for="market_condition">Market Condition</label>
 						<select bind:value={mrktCondition} id="market_condition">
-							<option>Trending Up / Down</option>
-							<option>Ranging / Sideways</option>
-							<option>High Volatility Chopping</option>
+							<option>Trending</option>
+							<option>Ranging</option>
+							<option>Volatile</option>
+							<option>Choppy</option>
 						</select>
 					</div>
 
@@ -247,8 +280,9 @@
 			</fieldset>
 
 			<div class="form-actions">
-				<button class="btn-secondary">Clear Fields</button>
-				<button class="btn-primary">Commit Trade to Journal</button>
+				<button class="btn-secondary" type="button" onclick={clearFields}>Clear Fields</button>
+				<button class="btn-primary" type="button" onclick={addTrade}>Commit Trade to Journal</button
+				>
 			</div>
 		</form>
 	</div>
