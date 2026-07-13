@@ -1,26 +1,24 @@
 <script>
 	import { getContext } from 'svelte';
 	const supabase = getContext('supabase');
-	
+
 	// array to store values
 	let tradeList = $state([]);
 
-	async function fetchTrades(){
-		const {data, error} = await supabase.from('trades')
-		.select("*");
+	async function fetchTrades() {
+		const { data, error } = await supabase.from('trades').select('*');
 
 		tradeList = data;
 
-		if(!tradeList || tradeList.length === 0){
-			alert("No trades found.");
+		if (!tradeList || tradeList.length === 0) {
+			alert('No trades found.');
 			return;
 		}
-
 	}
 
 	$effect(() => {
 		fetchTrades();
-	})
+	});
 </script>
 
 <main class="history-page">
@@ -140,7 +138,61 @@
 					<th>Lesson Learned</th>
 				</tr>
 			</thead>
-			<tbody id="tradeJournalBody"> </tbody>
+			<tbody id="tradeJournalBody">
+				{#each tradeList as trades}
+					<tr>
+						<td>{trades.trade_date}</td>
+						<td><strong>{trades.pair}</strong></td>
+
+						<td>
+							<span class="badge-position {trades.position?.toLowerCase()}">
+								{trades.position}
+							</span>
+						</td>
+
+						<td>${trades.entry_price}</td>
+						<td>${trades.exit_price}</td>
+						<td>${trades.stop_loss}</td>
+						<td>${trades.take_profit}</td>
+						<td>{trades.leverage}x</td>
+						<td>${trades.risk_amount}</td>
+
+						<td>
+							<span class="badge-result {trades.result?.toLowerCase()}">
+								{trades.result}
+							</span>
+						</td>
+
+						<td class="text-profit">+${trades.profit}</td>
+						<td class="text-loss">-${trades.loss}</td>
+						<td class={trades.net_pnl >= 0 ? 'text-profit' : 'text-loss'}>
+							${trades.net_pnl}
+						</td>
+
+						<td>{trades.strategy}</td>
+						<td>{trades.market_condition}</td>
+
+						<td>
+							{#if trades.chart_image_url}
+								<a
+									href={trades.chart_image_url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="chart-link">View Chart ↗</a
+								>
+							{:else}
+								<span class="text-muted-pnl">N/A</span>
+							{/if}
+						</td>
+
+						<td>{trades.emotion_before}</td>
+						<td>{trades.emotion_after}</td>
+
+						<td class="note-cell" title={trades.mistake_notes}>{trades.mistake_notes}</td>
+						<td class="note-cell" title={trades.lesson_learned}>{trades.lesson_learned}</td>
+					</tr>
+				{/each}
+			</tbody>
 		</table>
 	</div>
 
@@ -474,5 +526,116 @@
 	.pagination button:hover {
 		background-color: #27272a;
 		border-color: #a1a1aa;
+	}
+
+	/* ====================================================
+       7. DYNAMIC TRADE LIST DATA CELL STYLING
+       ==================================================== */
+
+	/* Generic Cell Alignment & Text Truncation */
+	td {
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; /* Monospace for numbers */
+		font-size: 0.85rem;
+	}
+
+	/* Long Notes & Lessons Text Clamp */
+	td.note-cell {
+		max-width: 200px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: #a1a1aa;
+		font-family: inherit;
+	}
+
+	/* Chart URL Link Styling */
+	td a.chart-link {
+		color: #38bdf8; /* Soft cyan accent for links */
+		text-decoration: none;
+		font-family: inherit;
+		font-size: 0.8rem;
+		transition: color 0.2s ease;
+	}
+
+	td a.chart-link:hover {
+		color: #7dd3fc;
+		text-decoration: underline;
+	}
+
+	/* ----------------------------------------------------
+       BADGES: Position Side (Long vs Short)
+       ---------------------------------------------------- */
+	.badge-position {
+		display: inline-block;
+		padding: 0.2rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		font-family: inherit;
+	}
+
+	.badge-position.long {
+		background-color: rgba(34, 197, 94, 0.15); /* Soft Green Tint */
+		color: #4ade80;
+		border: 1px solid rgba(34, 197, 94, 0.3);
+	}
+
+	.badge-position.short {
+		background-color: rgba(220, 38, 38, 0.15); /* Soft Crimson Tint */
+		color: #f87171;
+		border: 1px solid rgba(220, 38, 38, 0.3);
+	}
+
+	/* ----------------------------------------------------
+       BADGES: Result Outcomes (Win, Loss, Breakeven)
+       ---------------------------------------------------- */
+	.badge-result {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.25rem 0.6rem;
+		border-radius: 9999px; /* Pill Shape */
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		font-family: inherit;
+	}
+
+	.badge-result.win {
+		background-color: #14532d; /* Emerald Glow */
+		color: #86efac;
+		border: 1px solid #22c55e;
+	}
+
+	.badge-result.loss {
+		background-color: #7f1d1d; /* Deep Crimson */
+		color: #fca5a5;
+		border: 1px solid #dc2626;
+	}
+
+	.badge-result.be {
+		background-color: #27272a; /* Neutral Slate */
+		color: #a1a1aa;
+		border: 1px solid #3f3f46;
+	}
+
+	/* ----------------------------------------------------
+       PnL & FINANCIAL TEXT HIGHLIGHTS
+       ---------------------------------------------------- */
+	.text-profit {
+		color: #4ade80 !important;
+		font-weight: 600;
+	}
+
+	.text-loss {
+		color: #f87171 !important;
+		font-weight: 600;
+	}
+
+	.text-muted-pnl {
+		color: #71717a !important;
 	}
 </style>
