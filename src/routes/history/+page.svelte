@@ -5,6 +5,109 @@
 	// array to store values
 	let tradeList = $state([]);
 
+	// Filters trade history based on categories (Buy / Sell)
+	let selectCategory = $state('All');
+	let filteredTrades = $derived(
+		selectCategory === 'All'
+			? tradeList
+			: tradeList.filter((t) => t.position === selectCategory.toLowerCase())
+	);
+
+	// Filters trade history based on search input
+	let searchInput = $state('');
+	let filteredQuery = $derived(
+		filteredTrades.filter((t) => t.pair.toLowerCase().includes(searchInput.toLowerCase()))
+	);
+
+	let filteredDate = $derived(
+		filteredQuery.filter((t) => {
+			if(!startDate && !endDate){
+				return true;
+			}
+
+			if(startDate && !endDate){
+				return t.trade_date === startDate;
+			}
+
+			return(
+				t.trade_date >= startDate &&
+				t.trade_date <= endDate
+			)
+		})
+	)
+
+	async function selectDate(daysNum) {
+		if (!daysNum) return;
+
+		const clickDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(daysNum).padStart(2, '0')}`;
+
+		if (startDate === false) {
+			startDate = clickDate;
+		} else if (endDate === false && clickDate >= startDate) {
+			endDate = clickDate;
+		} else {
+			startDate = clickDate;
+			endDate = false;
+		}
+	}
+
+	function formatDateLabel(dateStr) {
+		if (!dateStr) return '';
+		const [year, month, day] = dateStr.split('-');
+		const dateObj = new Date(year, month - 1, day);
+		return dateObj.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
+	}
+
+	let isPickerOpen = $state(false);
+	let startDate = $state(false);
+	let endDate = $state(false);
+	let currentMonth = $state(new Date().getMonth());
+	let currentYear = $state(new Date().getFullYear());
+	const months = [
+		'January',
+		'February',
+		'March',
+		'April',
+		'May',
+		'June',
+		'July',
+		'August',
+		'September',
+		'October',
+		'November',
+		'December'
+	];
+
+	let calendarDays = $derived.by(() => {
+		const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+		const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+		let days = [];
+		for (let i = 0; i < firstDay; i++) days.push({ day: '', isFiller: true });
+		for (let i = 1; i <= daysInMonth; i++) days.push({ day: i, isFiller: false });
+		return days;
+	});
+
+	function prevMonth() {
+		if (currentMonth === 0) {
+			currentMonth = 11;
+			currentYear--;
+		} else {
+			currentMonth--;
+		}
+	}
+	function nextMonth() {
+		if (currentMonth === 11) {
+			currentMonth = 0;
+			currentYear++;
+		} else {
+			currentMonth++;
+		}
+	}
+
 	async function fetchTrades() {
 		const { data, error } = await supabase.from('trades').select('*');
 
@@ -19,7 +122,6 @@
 	$effect(() => {
 		fetchTrades();
 	});
-	
 </script>
 
 <main class="history-page">
@@ -34,9 +136,21 @@
 		</div>
 
 		<div class="trade-category">
-			<p>All Trades</p>
-			<p>Buy Side</p>
-			<p>Sell Side</p>
+			<button
+				type="button"
+				class:active={selectCategory === 'All'}
+				onclick={() => (selectCategory = 'All')}>All Trades</button
+			>
+			<button
+				type="button"
+				class:active={selectCategory === 'Long'}
+				onclick={() => (selectCategory = 'Long')}>Buy Side</button
+			>
+			<button
+				type="button"
+				class:active={selectCategory === 'Short'}
+				onclick={() => (selectCategory = 'Short')}>Sell Side</button
+			>
 		</div>
 	</div>
 
@@ -53,12 +167,17 @@
 				<circle cx="11" cy="11" r="7" />
 				<path d="M21 21l-4.3-4.3" />
 			</svg>
-			<input type="text" id="searchInput" placeholder="Search for trades" />
+			<input type="text" id="searchInput" placeholder="Search for trades" bind:value={searchInput}/>
 		</div>
 
 		<div class="toolbar-right">
 			<div class="picker-wrap">
-				<button class="date-pill" id="pillBtn" type="button">
+				<button
+					class="date-pill"
+					id="pillBtn"
+					type="button"
+					onclick={() => (isPickerOpen = !isPickerOpen)}
+				>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -70,31 +189,74 @@
 						<rect x="3" y="5" width="18" height="16" rx="2" />
 						<path d="M3 10h18M8 3v4M16 3v4" />
 					</svg>
-					<span id="pillLabel">Jan 6, 2022 - Jan 13, 2022</span>
+					<span id="pillLabel">
+						{#if startDate && endDate}
+							{formatDateLabel(startDate)} - {formatDateLabel(endDate)}
+						{:else if startDate}
+							{formatDateLabel(startDate)} - Select End Date
+						{:else}
+							Select Date Range
+						{/if}
+					</span>
 				</button>
 
-				<div class="picker" id="picker">
-					<div class="picker-header">
-						<button id="prevMonth" type="button">&#8249;</button>
-						<span id="monthLabel">January 2022</span>
-						<button id="nextMonth" type="button">&#8250;</button>
-					</div>
+				{#if isPickerOpen}
+					<div class="picker" id="picker">
+						<div class="picker-header">
+							<button id="prevMonth" type="button" onclick={prevMonth}>&#8249;</button>
+							<span id="monthLabel">{months[currentMonth]} {currentYear}</span>
+							<button id="nextMonth" type="button" onclick={nextMonth}>&#8250;</button>
+						</div>
 
-					<div class="cal-grid" id="calGrid">
-						<div class="dow">Su</div>
-						<div class="dow">Mo</div>
-						<div class="dow">Tu</div>
-						<div class="dow">We</div>
-						<div class="dow">Th</div>
-						<div class="dow">Fr</div>
-						<div class="dow">Sa</div>
-					</div>
+						<div class="cal-grid" id="calGrid">
+							<div class="dow">Su</div>
+							<div class="dow">Mo</div>
+							<div class="dow">Tu</div>
+							<div class="dow">We</div>
+							<div class="dow">Th</div>
+							<div class="dow">Fr</div>
+							<div class="dow">Sa</div>
 
-					<div class="picker-actions">
-						<button type="button" id="clearBtn">Clear</button>
-						<button type="button" class="apply" id="applyBtn">Apply</button>
+							{#each calendarDays as dayObj}
+								{@const thisDate = dayObj.isFiller
+									? ''
+									: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayObj.day).padStart(2, '0')}`}
+								<button
+									type="button"
+									class="day-btn"
+									class:filler={dayObj.isFiller}
+									class:selected={!dayObj.isFiller &&
+										(thisDate === startDate || thisDate === endDate)}
+									class:in-range={!dayObj.isFiller &&
+										startDate &&
+										endDate &&
+										thisDate > startDate &&
+										thisDate < endDate}
+									onclick={() => selectDate(dayObj.day)}
+								>
+									{dayObj.day}
+								</button>
+							{/each}
+						</div>
+
+						<div class="picker-actions">
+							<button
+								type="button"
+								id="clearBtn"
+								onclick={() => {
+									startDate = false;
+									endDate = false;
+								}}>Clear</button
+							>
+							<button
+								type="button"
+								class="apply"
+								id="applyBtn"
+								onclick={() => (isPickerOpen = false)}>Apply</button
+							>
+						</div>
 					</div>
-				</div>
+				{/if}
 			</div>
 
 			<button class="filters-btn" id="filtersBtn" type="button">
@@ -140,7 +302,7 @@
 				</tr>
 			</thead>
 			<tbody id="tradeJournalBody">
-				{#each tradeList as trades}
+				{#each filteredDate as trades}
 					<tr>
 						<td>{trades.trade_date}</td>
 						<td><strong>{trades.pair}</strong></td>
@@ -175,7 +337,7 @@
 
 						<td>
 							{#if trades.chart_image_url}
-					 			<a
+								<a
 									href={trades.chart_image_url}
 									target="_blank"
 									rel="noopener noreferrer"
@@ -265,27 +427,30 @@
 		padding-bottom: 0.5rem;
 	}
 
-	.trade-category p {
+	.trade-category button {
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
 		padding: 0.5rem 1rem;
 		margin: 0;
+		margin-bottom: -0.5rem; /* Anchor to parent line */
 		font-size: 0.9rem;
 		font-weight: 500;
 		color: #71717a;
+		font-family: inherit;
 		cursor: pointer;
 		transition:
 			color 0.2s ease,
 			border-color 0.2s ease;
-		border-bottom: 2px solid transparent;
-		margin-bottom: -0.5rem; /* Anchor to parent line */
 	}
 
-	/* Mock active state example for CSS mapping */
-	.trade-category p:first-child {
+	/* Dynamically applied when the state changes */
+	.trade-category button.active {
 		color: #dc2626; /* Crimson Accent */
 		border-color: #dc2626;
 	}
 
-	.trade-category p:hover {
+	.trade-category button:hover {
 		color: #f4f4f5;
 	}
 
@@ -369,7 +534,6 @@
 	}
 
 	.picker {
-		display: none; /* Hide by default, trigger layout via logic layer toggles */
 		position: absolute;
 		top: 110%;
 		right: 0;
@@ -380,6 +544,44 @@
 		border-radius: 8px;
 		padding: 1rem;
 		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+	}
+
+	.day-btn {
+		background: transparent;
+		border: none;
+		color: #e4e4e7;
+		height: 32px;
+		width: 32px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 0.8rem;
+		transition:
+			background-color 0.2s,
+			color 0.2s;
+	}
+
+	.day-btn:hover:not(.filler) {
+		background-color: #27272a;
+		color: #f4f4f5;
+	}
+
+	.day-btn.filler {
+		cursor: default;
+		visibility: hidden;
+	}
+
+	.day-btn.selected {
+		background-color: #dc2626; /* Crimson Accent */
+		color: #f4f4f5;
+	}
+
+	.day-btn.in-range {
+		background-color: rgba(220, 38, 38, 0.15);
+		color: #fca5a5;
 	}
 
 	/* Add utility target for when you connect JS toggling */
