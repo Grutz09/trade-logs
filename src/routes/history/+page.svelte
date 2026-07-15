@@ -19,6 +19,7 @@
 	$effect(() => {
 		fetchTrades();
 	});
+	
 </script>
 
 <main class="history-page">
@@ -174,7 +175,7 @@
 
 						<td>
 							{#if trades.chart_image_url}
-								<a
+					 			<a
 									href={trades.chart_image_url}
 									target="_blank"
 									rel="noopener noreferrer"
