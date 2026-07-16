@@ -21,20 +21,17 @@
 
 	let filteredDate = $derived(
 		filteredQuery.filter((t) => {
-			if(!startDate && !endDate){
+			if (!startDate && !endDate) {
 				return true;
 			}
 
-			if(startDate && !endDate){
+			if (startDate && !endDate) {
 				return t.trade_date === startDate;
 			}
 
-			return(
-				t.trade_date >= startDate &&
-				t.trade_date <= endDate
-			)
+			return t.trade_date >= startDate && t.trade_date <= endDate;
 		})
-	)
+	);
 
 	async function selectDate(daysNum) {
 		if (!daysNum) return;
@@ -99,6 +96,7 @@
 			currentMonth--;
 		}
 	}
+
 	function nextMonth() {
 		if (currentMonth === 11) {
 			currentMonth = 0;
@@ -117,6 +115,41 @@
 			alert('No trades found.');
 			return;
 		}
+	}
+
+	//============================ POP UP MODAL ================================
+	let selectedTrade = $state(null);
+	let editedTrade = $state({});
+	let isChoiceOpen = $state(false);
+	let isEditOpen = $state(false);
+
+	function openChoicePopup(trades) {
+		selectedTrade = trades;
+		isChoiceOpen = true;
+	}
+
+	function editTrade() {
+		isChoiceOpen = false;
+		isEditOpen = true;
+		editedTrade = { ...selectedTrade };
+	}
+
+	async function deleteTrade() {
+		if (!confirm('Are you sure you want to delete this trade?')) {
+			return;
+		} else {
+			await supabase.from('trades').delete().eq('id', selectedTrade.id);
+		}
+
+		fetchTrades();
+		isChoiceOpen = false;
+	}
+
+	async function saveChanges() {
+		await supabase.from('trades').update(editedTrade).eq('id', selectedTrade.id);
+
+		fetchTrades();
+		isEditOpen = false;
 	}
 
 	$effect(() => {
@@ -167,7 +200,12 @@
 				<circle cx="11" cy="11" r="7" />
 				<path d="M21 21l-4.3-4.3" />
 			</svg>
-			<input type="text" id="searchInput" placeholder="Search for trades" bind:value={searchInput}/>
+			<input
+				type="text"
+				id="searchInput"
+				placeholder="Search for trades"
+				bind:value={searchInput}
+			/>
 		</div>
 
 		<div class="toolbar-right">
@@ -303,7 +341,7 @@
 			</thead>
 			<tbody id="tradeJournalBody">
 				{#each filteredDate as trades}
-					<tr>
+					<tr onclick={() => openChoicePopup(trades)}>
 						<td>{trades.trade_date}</td>
 						<td><strong>{trades.pair}</strong></td>
 
@@ -358,6 +396,12 @@
 			</tbody>
 		</table>
 	</div>
+
+	{#if isChoiceOpen === true}
+		<button type="button" id="edit-btn" onclick={editTrade}>Edit</button>
+		<button type="button" id="delete-btn" onclick={deleteTrade}>Delete</button>
+		<button type="button" id="cancel-btn" onclick={() => isChoiceOpen = false}>Cancel</button>
+	{/if}
 
 	<div class="pagination">
 		<button type="button" id="prevPage">&#8249; Prev</button>
