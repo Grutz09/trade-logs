@@ -2,6 +2,38 @@
 	import { getContext } from 'svelte';
 	const supabase = getContext('supabase');
 
+	//validate inputs to check for empty fields
+	function validateInputs(trade) {
+		const requiredFields = [
+			{ name: 'Trade Date', value: trade.trade_date },
+			{ name: 'Pair', value: trade.pair },
+			{ name: 'Position', value: trade.position },
+			{ name: 'Entry Price', value: trade.entry_price },
+			{ name: 'Stop Loss', value: trade.stop_loss },
+			{ name: 'Take Profit', value: trade.take_profit },
+			{ name: 'Leverage', value: trade.leverage },
+			{ name: 'Risk Amount', value: trade.risk_amount },
+			{ name: 'Result', value: trade.result },
+			{ name: 'Strategy', value: trade.strategy },
+			{ name: 'Market Condition', value: trade.market_condition },
+			{ name: 'Emotion Before', value: trade.emotion_before },
+			{ name: 'Emotion After', value: trade.emotion_after },
+			{ name: 'Mistakes', value: trade.mistake_notes },
+			{ name: 'Lesson Learned', value: trade.lesson_learned }
+		];
+
+		const missingField = requiredFields.find((field) => field.value === '' || field.value === null);
+
+		if (missingField) {
+			throw new Error(`${missingField.name} is required.`);
+		}
+
+		if (!trade.chart_image_url.startsWith('https://')) {
+			throw new Error('Chart Setup URL must start with https://');
+		}
+
+	}
+
 	// array to store values
 	let tradeList = $state([]);
 
@@ -146,8 +178,17 @@
 	}
 
 	async function saveChanges() {
-		await supabase.from('trades').update(editedTrade).eq('id', selectedTrade.id);
+		validateInputs(editedTrade);
 
+		const fields = ['emotion_before', 'emotion_after'];
+
+		fields.forEach((key) => {
+			if (typeof editedTrade[key] === 'string') {
+				editedTrade[key] = editedTrade[key].toLowerCase().trim();
+			}
+		});
+
+		await supabase.from('trades').update(editedTrade).eq('id', selectedTrade.id);
 		fetchTrades();
 		isEditOpen = false;
 	}
@@ -339,6 +380,7 @@
 					<th>Lesson Learned</th>
 				</tr>
 			</thead>
+
 			<tbody id="tradeJournalBody">
 				{#each filteredDate as trades}
 					<tr onclick={() => openChoicePopup(trades)}>
@@ -379,6 +421,7 @@
 									href={trades.chart_image_url}
 									target="_blank"
 									rel="noopener noreferrer"
+									onclick={(e) => e.stopPropagation()}
 									class="chart-link">View Chart ↗</a
 								>
 							{:else}
@@ -397,10 +440,187 @@
 		</table>
 	</div>
 
-	{#if isChoiceOpen === true}
-		<button type="button" id="edit-btn" onclick={editTrade}>Edit</button>
-		<button type="button" id="delete-btn" onclick={deleteTrade}>Delete</button>
-		<button type="button" id="cancel-btn" onclick={() => isChoiceOpen = false}>Cancel</button>
+	<!-- ========================== POP UP MODAL ======================== -->
+	{#if isChoiceOpen}
+		<div class="modal-overlay">
+			<div class="modal-content">
+				<h3>Modify Trade</h3>
+				<p>What action would you like to do with this trade?</p>
+
+				<div class="modal-actions">
+					<button type="button" id="edit-btn" onclick={editTrade}>Edit</button>
+					<button type="button" id="delete-btn" onclick={deleteTrade}>Delete</button>
+					<button type="button" id="cancel-btn" onclick={() => (isChoiceOpen = false)}
+						>Cancel</button
+					>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<!-- ================================== EDIT MODAL ===============================  -->
+	{#if isEditOpen}
+		<form>
+			<fieldset class="form-section">
+				<legend>Trade Setup & Logistics</legend>
+				<div class="grid-3">
+					<div class="input-group">
+						<label for="trade_date">Trade Date</label>
+						<input bind:value={editedTrade.trade_date} id="trade_date" type="date" />
+					</div>
+
+					<div class="input-group">
+						<label for="pair">Ticker / Pair</label>
+						<input bind:value={editedTrade.pair} id="pair" />
+					</div>
+
+					<div class="input-group">
+						<label for="position">Position Side</label>
+						<select bind:value={editedTrade.position} id="position">
+							<option value="long">LONG</option>
+							<option value="short">SHORT</option>
+						</select>
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="form-section">
+				<legend>Prices & Risk Management</legend>
+				<div class="grid-4">
+					<div class="input-group">
+						<label for="entry_price">Entry Price</label>
+						<input bind:value={editedTrade.entry_price} id="entry_price" type="number" />
+					</div>
+
+					<div class="input-group">
+						<label for="exit_price">Exit Price</label>
+						<input bind:value={editedTrade.exit_price} id="exit_price" type="number" />
+					</div>
+
+					<div class="input-group">
+						<label for="stop_loss">Stop Loss (SL)</label>
+						<input bind:value={editedTrade.stop_loss} id="stop_loss" type="number" />
+					</div>
+
+					<div class="input-group">
+						<label for="take_profit">Take Profit (TP)</label>
+						<input bind:value={editedTrade.take_profit} id="take_profit" type="number" />
+					</div>
+				</div>
+
+				<div class="grid-3 mt-4">
+					<div class="input-group">
+						<label for="leverage">Leverage / Lot Size</label>
+						<input bind:value={editedTrade.leverage} id="leverage" type="number" />
+					</div>
+
+					<div class="input-group">
+						<label for="risk_amount">Risk Amount ($)</label>
+						<input bind:value={editedTrade.risk_amount} id="risk_amount" type="number" />
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="form-section highlight-section">
+				<legend>Trade Performance & Outcome</legend>
+				<div class="grid-4">
+					<div class="input-group">
+						<label for="result">Result</label>
+						<select bind:value={editedTrade.result} id="result">
+							<option value="win">WIN</option>
+							<option value="loss">LOSS</option>
+							<option value="breakeven">Breakeven</option>
+						</select>
+					</div>
+
+					<div class="input-group">
+						<label for="profit">Gross Profit</label>
+						<input bind:value={editedTrade.profit} id="profit" type="number" />
+					</div>
+
+					<div class="input-group">
+						<label for="loss">Gross Loss</label>
+						<input bind:value={editedTrade.loss} id="loss" type="number" />
+					</div>
+
+					<div class="input-group">
+						<label for="net_pnl">Net PnL ($)</label>
+						<input bind:value={editedTrade.net_pnl} id="net_pnl" type="Number()" />
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="form-section">
+				<legend>Strategy & Market Context</legend>
+				<div class="grid-3">
+					<div class="input-group">
+						<label for="strategy">Strategy / Playbook Setup</label>
+						<input bind:value={editedTrade.strategy} id="strategy" />
+					</div>
+
+					<div class="input-group">
+						<label for="market_condition">Market Condition</label>
+						<select bind:value={editedTrade.market_condition} id="market_condition">
+							<option value="trending">Trending</option>
+							<option value="ranging">Ranging</option>
+							<option value="volatile">Volatile</option>
+							<option value="choppy">Choppy</option>
+						</select>
+					</div>
+
+					<div class="input-group">
+						<label for="chart_image_url">Chart Setup URL</label>
+						<input bind:value={editedTrade.chart_image_url} id="chart_image_url" />
+					</div>
+				</div>
+			</fieldset>
+
+			<fieldset class="form-section">
+				<legend>Psychology & Post-Trade Analysis</legend>
+				<div class="grid-2">
+					<div class="input-group">
+						<label for="emotion_before">Emotion Before Trade</label>
+						<select bind:value={editedTrade.emotion_before} id="emotion_before">
+							<option>Confident / Disciplined</option>
+							<option>Calm / Neutral</option>
+							<option>FOMO / Impatient</option>
+							<option>Anxious / Fearful</option>
+						</select>
+					</div>
+
+					<div class="input-group">
+						<label for="emotion_after">Emotion After Trade</label>
+						<select bind:value={editedTrade.emotion_after} id="emotion_after">
+							<option>Satisfied / Followed Rules</option>
+							<option>Neutral</option>
+							<option>Angry / Revengeful</option>
+							<option>Regretful (Overleveraged/Early Exit)</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid-2 mt-4">
+					<div class="input-group">
+						<label for="mistake_notes">Mistakes / Review Notes</label>
+						<textarea bind:value={editedTrade.mistake_notes} id="mistake_notes"></textarea>
+					</div>
+
+					<div class="input-group">
+						<label for="lesson_learned">Key Lesson Learned</label>
+						<textarea bind:value={editedTrade.lesson_learned} id="lesson_learned"></textarea>
+					</div>
+				</div>
+			</fieldset>
+
+			<div class="form-actions">
+				<button class="btn-primary" type="button" onclick={saveChanges}
+					>Commit Trade to Journal</button
+				>
+				<button type="button" onclick={() => (isEditOpen = false)} class="btn-primary"
+					>Cancel</button
+				>
+			</div>
+		</form>
 	{/if}
 
 	<div class="pagination">
@@ -884,5 +1104,266 @@
 
 	.text-muted-pnl {
 		color: #71717a !important;
+	}
+
+	/* ====================================================
+   8. MODAL OVERLAY & POPUP WINDOWS
+   ==================================================== */
+
+	/* Full-screen backdrop */
+	.modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+	}
+
+	/* The centered modal card (choice popup) */
+	.modal-content {
+		background-color: #18181b;
+		border: 1px solid #27272a;
+		border-radius: 12px;
+		padding: 2rem;
+		width: 100%;
+		max-width: 360px;
+		box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+		animation: modalFadeIn 0.2s ease;
+	}
+
+	.modal-content h3 {
+		font-size: 1.15rem;
+		font-weight: 700;
+		margin: 0 0 0.4rem 0;
+		color: #f4f4f5;
+	}
+
+	.modal-content p {
+		font-size: 0.875rem;
+		color: #a1a1aa;
+		margin: 0 0 1.5rem 0;
+	}
+
+	/* Choice Popup Buttons Row */
+	.modal-actions {
+		display: flex;
+		gap: 0.75rem;
+		justify-content: flex-end;
+	}
+
+	.modal-actions button {
+		padding: 0.5rem 1.1rem;
+		border-radius: 6px;
+		font-size: 0.875rem;
+		font-weight: 600;
+		font-family: inherit;
+		cursor: pointer;
+		border: 1px solid transparent;
+		transition:
+			background-color 0.2s,
+			border-color 0.2s;
+	}
+
+	#edit-btn {
+		background-color: #dc2626;
+		color: #f4f4f5;
+		border-color: #dc2626;
+	}
+
+	#edit-btn:hover {
+		background-color: #b91c1c;
+		border-color: #b91c1c;
+	}
+
+	#delete-btn {
+		background-color: transparent;
+		color: #f87171;
+		border-color: #7f1d1d;
+	}
+
+	#delete-btn:hover {
+		background-color: rgba(220, 38, 38, 0.15);
+		border-color: #dc2626;
+	}
+
+	#cancel-btn {
+		background-color: transparent;
+		color: #a1a1aa;
+		border-color: #27272a;
+	}
+
+	#cancel-btn:hover {
+		background-color: #27272a;
+		color: #f4f4f5;
+	}
+
+	/* ====================================================
+   9. EDIT TRADE FORM MODAL
+   ==================================================== */
+
+	/* Edit form renders as a full-screen overlay modal */
+	form {
+		position: fixed;
+		display: flex;
+		flex-direction: column;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		z-index: 1000;
+		padding: 1.5rem;
+		box-sizing: border-box;
+		overflow-y: auto;
+		animation: modalFadeIn 0.2s ease;
+	}
+
+	/* Wrap the form body in a scrollable card */
+	form {
+		align-items: flex-start; /* Allow vertical scroll on small screens */
+	}
+
+	.form-section {
+		background-color: #18181b;
+		border: 1px solid #27272a;
+		border-radius: 10px;
+		padding: 1.5rem;
+		margin-bottom: 1rem;
+		width: 100%;
+		max-width: 780px;
+		margin-inline: auto;
+	}
+
+	.form-section legend {
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: #71717a;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		padding: 0 0.5rem;
+	}
+
+	/* Highlight section (Trade Performance) */
+	.highlight-section {
+		border-color: rgba(220, 38, 38, 0.3);
+		background-color: rgba(220, 38, 38, 0.04);
+	}
+
+	/* Grid Layouts */
+	.grid-2 {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.grid-3 {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.grid-4 {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr 1fr;
+		gap: 1rem;
+	}
+
+	.mt-4 {
+		margin-top: 1rem;
+	}
+
+	/* Input Groups */
+	.input-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+	}
+
+	.input-group label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: #71717a;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.input-group input,
+	.input-group select,
+	.input-group textarea {
+		background-color: #09090b;
+		border: 1px solid #27272a;
+		color: #f4f4f5;
+		padding: 0.55rem 0.75rem;
+		border-radius: 6px;
+		font-size: 0.875rem;
+		font-family: inherit;
+		transition: border-color 0.2s;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.input-group input:focus,
+	.input-group select:focus,
+	.input-group textarea:focus {
+		outline: none;
+		border-color: #dc2626;
+	}
+
+	.input-group textarea {
+		min-height: 90px;
+		resize: vertical;
+	}
+
+	/* Form Save Button */
+	.form-actions {
+		display: flex;
+		justify-content: flex-end;
+		max-width: 780px;
+		margin-inline: auto;
+		gap: 10px;
+		padding-bottom: 2rem;
+	}
+
+	.btn-primary {
+		background-color: #dc2626;
+		color: #f4f4f5;
+		border: none;
+		padding: 0.65rem 1.5rem;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		font-weight: 700;
+		font-family: inherit;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+
+	.btn-primary:hover {
+		background-color: #b91c1c;
+	}
+
+	/* ====================================================
+   10. MODAL ENTRANCE ANIMATION
+   ==================================================== */
+	@keyframes modalFadeIn {
+		from {
+			opacity: 0;
+			transform: scale(0.96);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
 	}
 </style>

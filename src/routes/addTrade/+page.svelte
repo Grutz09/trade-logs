@@ -23,8 +23,6 @@
 	let mistakes = $state('');
 	let lessonLearned = $state('');
 
-
-
 	function clearFields() {
 		tradeDate = '';
 		pair = '';
@@ -43,7 +41,7 @@
 		mrktCondition = '';
 		chartUrl = '';
 		emotionBfr = '';
-		emotionAftr ='';
+		emotionAftr = '';
 		mistakes = '';
 		lessonLearned = '';
 	}
@@ -61,6 +59,7 @@
 			{ name: 'Result', value: result },
 			{ name: 'Strategy', value: strategy },
 			{ name: 'Market Condition', value: mrktCondition },
+			{ name: 'Chart Setup Url', value: chartUrl },
 			{ name: 'Emotion Before', value: emotionBfr },
 			{ name: 'Emotion After', value: emotionAftr },
 			{ name: 'Mistakes', value: mistakes },
@@ -68,9 +67,13 @@
 		];
 
 		const missingField = requiredFields.find((field) => field.value === '' || field.value === null);
-	
+
 		if (missingField) {
 			throw new Error(`${missingField.name} is required.`);
+		}
+
+		if (!chartUrl.startsWith('https://')) {
+			throw new Error('Chart Setup URL must start with https://');
 		}
 	}
 
@@ -107,13 +110,12 @@
 					lesson_learned: lessonLearned.toLocaleLowerCase()
 				}
 			]);
-				
-			if(error){
+
+			if (error) {
 				throw new Error(error.message);
 			}
 
-			alert("Trade committed.");
-
+			alert('Trade committed.');
 		} catch (error) {
 			alert(error.message);
 		}
@@ -303,6 +305,7 @@
 		max-width: 900px;
 		background-color: #18181b; /* Charcoal Surface */
 		border: 1px solid #27272a; /* Gunmetal Border */
+
 		border-radius: 12px;
 		padding: 2.5rem;
 		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -413,6 +416,8 @@
 		font-size: 0.95rem;
 		border-radius: 6px;
 		font-family: inherit;
+		width: 100%; 
+		box-sizing: border-box;
 		transition:
 			border-color 0.2s,
 			box-shadow 0.2s;
