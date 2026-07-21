@@ -51,6 +51,7 @@
 		filteredTrades.filter((t) => t.pair.toLowerCase().includes(searchInput.toLowerCase()))
 	);
 
+	// filter trades using calendar history
 	let filteredDate = $derived(
 		filteredQuery.filter((t) => {
 			if (!startDate && !endDate) {
@@ -193,6 +194,7 @@
 		isEditOpen = false;
 	}
 
+	// it reloads fetchTrade again and again when there's a change on fetchTrades function.
 	$effect(() => {
 		fetchTrades();
 	});
@@ -557,7 +559,7 @@
 						<label for="strategy">Strategy / Playbook Setup</label>
 						<input bind:value={editedTrade.strategy} id="strategy" />
 					</div>
-
+					
 					<div class="input-group">
 						<label for="market_condition">Market Condition</label>
 						<select bind:value={editedTrade.market_condition} id="market_condition">

@@ -1,5 +1,6 @@
 <script>
 	import { getContext } from 'svelte';
+	import backArrow from '$lib/assets/back-arrow.svg';
 	const supabase = getContext('supabase');
 
 	let tradeDate = $state('');
@@ -60,7 +61,7 @@
 			{ name: 'Strategy', value: strategy },
 			{ name: 'Market Condition', value: mrktCondition },
 			{ name: 'Chart Setup Url', value: chartUrl },
-			{ name: 'Emotion Before', value: emotionBfr },
+			{ name: 'Emotion Before', value: emotionBfr },	
 			{ name: 'Emotion After', value: emotionAftr },
 			{ name: 'Mistakes', value: mistakes },
 			{ name: 'Lesson Learned', value: lessonLearned }
@@ -124,6 +125,12 @@
 
 <main class="form-page">
 	<div class="form-container">
+		<div class="return-btn-container">
+			<a href="/history" id="back-arr-link" aria-label="Back to History">
+				<span>Back to History</span>
+			</a>
+		</div>
+		
 		<header class="form-header">
 			<h1>Log New <span>Trade</span></h1>
 			<p>Fill out the data details to update your trading journal.</p>
@@ -291,6 +298,38 @@
 </main>
 
 <style>
+	/* Return button style */
+
+	.return-btn-container {
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-start;
+		align-items: center;
+		margin-bottom: 1.5rem;
+	}
+
+
+	#back-arr-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: #a1a1aa;
+		text-decoration: none;
+		font-size: 0.875rem;
+		font-weight: 500;
+		padding: 0.4rem 0.75rem;
+		border-radius: 6px;
+		border: 1px solid #27272a;
+		background-color: #09090b;
+		transition: all 0.2s ease;
+	}
+
+	#back-arr-link:hover {
+		color: #f4f4f5;
+		border-color: #dc2626;
+		background-color: rgba(220, 38, 38, 0.08);
+	}
+
 	/* Content Layout Container */
 	.form-page {
 		display: flex;
@@ -416,7 +455,7 @@
 		font-size: 0.95rem;
 		border-radius: 6px;
 		font-family: inherit;
-		width: 100%; 
+		width: 100%;
 		box-sizing: border-box;
 		transition:
 			border-color 0.2s,
