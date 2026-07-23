@@ -8,6 +8,8 @@
 	let total_trades = $state(0);
 	let net_Pnl = $state(0);
 	let win_rate = $state(0);
+	let totalWins = $state(0);
+	let totalLoss = $state(0);
 
 	async function fetchTrades() {
 		const { data, error } = await supabase.from('trades').select('*');
@@ -46,11 +48,53 @@
 		win_rate = Number(((win.length / tradeList.length) * 100).toFixed(1));
 	}
 
+	async function winsThisMonth() {
+		let now = new Date();
+		let year = now.getFullYear();
+		let month = now.getMonth();
+
+		let startOfMonth = new Date(year, month, 1);
+		let endOfMonth = new Date(year, month + 1, 0);
+
+		const { data, error } = await supabase
+			.from('trades')
+			.select('*')
+			.eq('result', 'win')
+			.gte('created_at', startOfMonth.toISOString())
+			.lt('created_at', endOfMonth.toISOString());
+
+		if(error) throw error;
+
+		totalWins = data.length;	
+	}
+
+	async function lossThisMonth(){
+		let now = new Date();
+		let year = now.getFullYear();
+		let month = now.getMonth();
+
+		let startOfMonth = new Date(year, month, 1);
+		let endOfMonth = new Date(year, month + 1, 0);
+
+		const { data, error } = await supabase
+			.from('trades')
+			.select('*')
+			.eq('result', 'loss')
+			.gte('created_at', startOfMonth.toISOString())
+			.lt('created_at', endOfMonth.toISOString())
+		;
+
+		if(error) throw error;
+		totalLoss = data.length;
+	}
+
 	$effect(async () => {
 		await fetchTrades();
 		await totalTrades();
 		await netPnl();
 		await winRate();
+		await winsThisMonth();
+		await lossThisMonth();
 	});
 </script>
 
@@ -111,6 +155,19 @@
 				</svg>
 			{/snippet}
 		</StatCard>
+
+		<StatCard
+			title="Average Wins"
+			value={totalWins}
+			subtext="Total Wins this Month">
+		</StatCard>
+
+		<StatCard
+			title="Average Loss"
+			value={totalLoss}
+			subtext="Total Loss this Month">
+		</StatCard>
+
 	</section>
 
 	<!-- MIDDLE: Equity curve + recent trades -->
